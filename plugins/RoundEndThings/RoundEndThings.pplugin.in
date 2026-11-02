@@ -2,7 +2,7 @@
 	"$schema": "https://raw.githubusercontent.com/untrustedmodders/plugify/refs/heads/main/schemas/plugin.schema.json",
 	"version": "${ROUNDENDTHINGS_VERSION}",
 	"name": "RoundEndThings",
-	"description": "Round-end bhop/speed/gravity, ported from the Metamod plugin RoundEndThings (ABKAM). On round_end it enables sv_autobunnyhopping/sv_enablebunnyhopping and writes m_flVelocityModifier/m_flGravityScale/m_flActualGravityScale of every alive player; round_start restores the convars and the fields to 1.0. Players opt out per feature in the 'mm_ret' / '!ret' menu ('Настройки конца раунда'); the two choices persist in the permissions cookies 'roundend_disable_speed' and 'roundend_disable_gravity' (the names of the Metamod original, which used the cookies plugin). Settings: addons/configs/RoundEndThings/settings.ini. No exported methods.",
+	"description": "Round-end bhop/speed/gravity, ported from the Metamod plugin RoundEndThings (ABKAM). On round_end it enables sv_autobunnyhopping/sv_enablebunnyhopping and writes m_flVelocityModifier/m_flGravityScale/m_flActualGravityScale of every alive pawn; round_start restores the convars and the fields to 1.0. Players opt out per feature in the 'mm_ret' (console) / '!ret' (chat) menu; the two choices persist in the official permissions cookies 'roundend_disable_speed'/'roundend_disable_gravity' (the names of the Metamod original). Settings: configs/RoundEndThings/settings.ini (the production KeyValues file, unchanged). Pure s2sdk: no pisexcompat, optional hudmenu/permissions APIs only, no exported methods.",
 	"author": "ABKAM, ported to Plugify",
 	"website": "https://github.com/untrustedmodders/plugify",
 	"license": "GPL-3.0",

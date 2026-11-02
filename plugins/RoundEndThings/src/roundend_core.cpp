@@ -30,6 +30,30 @@ std::string GravityMenuLabel(const PlayerSettings& settings) {
 	return settings.disableGravity ? "Отключить гравитацию [X]" : "Отключить гравитацию [ ]";
 }
 
+MenuChoice ChoiceFromInfo(std::string_view info) {
+	if (info == kSpeedInfo) {
+		return MenuChoice::Speed;
+	}
+	if (info == kGravityInfo) {
+		return MenuChoice::Gravity;
+	}
+	return MenuChoice::None;
+}
+
+const char* ApplyChoice(PlayerSettings& settings, MenuChoice choice) {
+	switch (choice) {
+	case MenuChoice::Speed:
+		settings.disableSpeed = !settings.disableSpeed;
+		return kSpeedChanged;
+	case MenuChoice::Gravity:
+		settings.disableGravity = !settings.disableGravity;
+		return kGravityChanged;
+	case MenuChoice::None:
+		break;
+	}
+	return nullptr;
+}
+
 bool CookieValueToBool(const plg::any& value, bool& out) {
 	if (plg::holds_alternative<bool>(value)) {
 		out = plg::get<bool>(value);
@@ -71,6 +95,80 @@ bool CookieValueToBool(const plg::any& value, bool& out) {
 		return ParseNumericText(std::string(plg::get<plg::string>(value)), out);
 	}
 	return false;
+}
+
+Settings ParseSettings(const KvNode& root) {
+	Settings settings;
+	// The original's LoadConfig(): KeyValues::GetBool/GetFloat with the built-in defaults - a
+	// missing or empty key keeps the default, a present numeric value wins.
+	settings.bhopEnabled = root.GetBool("bhop_enabled", settings.bhopEnabled);
+	settings.speedEnabled = root.GetBool("speed_enabled", settings.speedEnabled);
+	settings.gravityEnabled = root.GetBool("gravity_enabled", settings.gravityEnabled);
+	settings.speed = root.GetFloat("speed", settings.speed);
+	settings.gravity = root.GetFloat("gravity", settings.gravity);
+	return settings;
+}
+
+std::string JoinPath(std::string_view a, std::string_view b) {
+	if (a.empty()) {
+		return std::string(b);
+	}
+	if (b.empty()) {
+		return std::string(a);
+	}
+	std::string out(a);
+	if (out.back() != '/') {
+		out.push_back('/');
+	}
+	if (b.front() == '/') {
+		b.remove_prefix(1);
+	}
+	out.append(b);
+	return out;
+}
+
+std::vector<std::string> ConfigCandidates(std::string_view configsRoot, std::string_view dataRoot) {
+	std::vector<std::string> candidates;
+	// The raw cwd-relative Metamod path stays first: a server that still keeps its file next to the
+	// game binary keeps loading exactly that file (and its values), not a different one from
+	// <configs>/RoundEndThings.
+	candidates.emplace_back(kConfigRawPath);
+
+	// pisexcompat's ConfigDir() is JoinPath(GetConfigsDir(), "RoundEndThings"); with no host
+	// directory that is the relative "RoundEndThings", the same spelling the old port used.
+	const std::string pluginDir = configsRoot.empty() ? std::string(kPluginDir) : JoinPath(configsRoot, kPluginDir);
+	candidates.push_back(JoinPath(pluginDir, kConfigFileName));
+	candidates.push_back(JoinPath(JoinPath(pluginDir, "translations"), kConfigFileName));
+
+	const std::string dataPluginDir = dataRoot.empty() ? std::string(kPluginDir) : JoinPath(dataRoot, kPluginDir);
+	candidates.push_back(JoinPath(dataPluginDir, kConfigFileName));
+	return candidates;
+}
+
+ConfigLoadResult LoadSettings(const std::vector<std::string>& candidates) {
+	ConfigLoadResult result;
+	if (!candidates.empty()) {
+		// pisexcompat's ResolvePath() fallback named the plugin config file when nothing existed.
+		result.path = candidates.size() > 1 ? candidates[1] : candidates.front();
+	}
+	for (const std::string& candidate : candidates) {
+		const std::optional<std::string> text = ReadTextFile(candidate);
+		if (!text) {
+			continue;
+		}
+		// The first existing file is authoritative: a malformed primary file is reported by the
+		// caller and keeps the defaults, it never falls through to a lower-priority copy.
+		result.found = true;
+		result.path = candidate;
+		const std::optional<KvNode> root = ParseKv1(*text);
+		if (!root) {
+			return result;
+		}
+		result.parsed = true;
+		result.settings = ParseSettings(*root);
+		return result;
+	}
+	return result;
 }
 
 } // namespace roundend

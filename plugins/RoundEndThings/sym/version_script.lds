@@ -10,7 +10,8 @@
            per-player round-end settings. */
         __permissions_*;
 
-        /* hudmenu binding slots (defined by hudmenu_bindings); pisexcompat references them. */
+        /* hudmenu binding slots (defined by hudmenu_bindings, filled by the plugify module from the
+           optional hudmenu plugin): the player's own "!menu" type choice. */
         __hudmenu_*;
 
         /* No exported methods: RoundEndThings exposes nothing to other plugins. */
